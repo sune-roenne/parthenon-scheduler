@@ -15,6 +15,7 @@ object Config {
   
   private implicit def confConv(config : TypesafeConfig) = new {
     def >[A](confName : String)(func : TypesafeConfig => A ) = if (!conf.hasPath(confName)) None else Some(func(conf.getConfig(confName)))
+    def >![A](confName : String)(func : TypesafeConfig => A ) = func(conf.getConfig(confName))
     def >>[A](confName : String)(func : TypesafeConfig => A ) = if (!conf.hasPath(confName)) List.empty else conf.getConfigList(confName).map(func).toList
     def ?(confName : String) = if(!config.hasPath(confName)) None else Some(config.getString(confName))
   }
@@ -29,12 +30,14 @@ object Config {
   
   def holidays = (conf > "holidays")(holConf => DateQuery(
     holConf.getString("connection"),
-    holConf.getString("query")
+    holConf.getString("query"),
+    holConf.getInt("update-frequency")
   ))
   
   def irregularBankDays = (conf > "irregular-bank-days")(bdConf => DateQuery(
     bdConf.getString("connection"),
-    bdConf.getString("query")
+    bdConf.getString("query"),
+    bdConf.getInt("update-frequency")
   ))
   
   def executions = (conf >> "executions")(execConf => Execution(
@@ -45,9 +48,16 @@ object Config {
     execConf.getString("group-name-element"),
     execConf.getString("batch-date-element-name"),
     (execConf ? "execution-day-condition"),
-    execConf.getString("date-format")
-    
+    execConf.getString("date-format"),
+    execConf.getString("output-file-encoding")
   ))
+  
+  def dal = (conf >! "persistence")(dalConf => new {
+    val url = dalConf.getString("url")
+    val user = dalConf.getString("user")
+    val password = dalConf.getString("password")
+  })
+  
     
   
 

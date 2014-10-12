@@ -10,5 +10,6 @@ case class Execution (
     batchGroupElementName : String,
     batchDateElementName : String,
     executionDayCondition : Option[String],
-    dateFormat : String
+    dateFormat : String,
+    outputFileEncoding : String
 )

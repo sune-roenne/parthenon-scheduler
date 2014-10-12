@@ -15,7 +15,8 @@ libraryDependencies ++= Seq(
    "com.jolbox" % "bonecp" % "0.8.0.RELEASE",
    "com.typesafe.slick" %% "slick" % "2.1.0",
    "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-   "org.scala-lang.modules" %% "scala-xml" % "1.0.2"   
+   "org.scala-lang.modules" %% "scala-xml" % "1.0.2",
+   "com.typesafe.akka" %% "akka-actor" % "2.3.6"   
    ) 
 
 EclipseKeys.createSrc := EclipseCreateSrc.Default + EclipseCreateSrc.Resource
