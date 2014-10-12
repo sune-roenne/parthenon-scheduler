@@ -2,12 +2,16 @@ package parthenon.scheduler.config
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.{Config => TypesafeConfig}
-
 import scala.collection.JavaConversions._
+import parthenon.scheduler.model.Execution
+import java.text.SimpleDateFormat
+import java.sql.Time
+import parthenon.scheduler.model.DateQuery
 
 object Config {
   
   def conf = ConfigFactory.load
+  val timeFormat = new SimpleDateFormat("HH:mm")
   
   private implicit def confConv(config : TypesafeConfig) = new {
     def >[A](confName : String)(func : TypesafeConfig => A ) = if (!conf.hasPath(confName)) None else Some(func(conf.getConfig(confName)))
@@ -23,25 +27,28 @@ object Config {
         val password = connConf.getString("password")
   }) 
   
-  def holidays = (conf > "holidays")(holConf => new {
-    val connectionName = holConf.getString("connection")
-    val query = holConf.getString("query")
-  })
+  def holidays = (conf > "holidays")(holConf => DateQuery(
+    holConf.getString("connection"),
+    holConf.getString("query")
+  ))
   
-  def irregularBankDays = (conf > "irregular-bank-days")(bdConf => new {
-    val connectionName = bdConf.getString("connection")
-    val query = bdConf.getString("query")
-  })
+  def irregularBankDays = (conf > "irregular-bank-days")(bdConf => DateQuery(
+    bdConf.getString("connection"),
+    bdConf.getString("query")
+  ))
   
-  def executions = (conf >> "executions")(execConf => {
-    val batchGroupName = execConf.getString("batch-group-name")
-    val timeOfDay = execConf.getString("tome-of-day")
-    val outputFileName = execConf.getString("output-file-name")
-    val xmlPrefix = execConf.getStringList("xml-prefix")
-    val batchGroupElementName = execConf.getString("group-name-element")
-    val batchDateElementName = execConf.getString("batch-date-element-name")
-    val executionDayCondition = (execConf ? "execution-day-condition")
-  })
+  def executions = (conf >> "executions")(execConf => Execution(
+    execConf.getString("batch-group-name"),
+    new Time(timeFormat.parse(execConf.getString("time-of-day")).getTime),
+    execConf.getString("output-file-name"),
+    execConf.getStringList("xml-prefix").toList,
+    execConf.getString("group-name-element"),
+    execConf.getString("batch-date-element-name"),
+    (execConf ? "execution-day-condition"),
+    execConf.getString("date-format")
     
+  ))
+    
+  
 
 }
