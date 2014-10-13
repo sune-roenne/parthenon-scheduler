@@ -11,5 +11,6 @@ case class Execution (
     batchDateElementName : String,
     executionDayCondition : Option[String],
     dateFormat : String,
-    outputFileEncoding : String
+    outputFileEncoding : String,
+    batchDateExpression : String
 )

@@ -25,15 +25,23 @@ class SpecialDayActor extends Actor {
         case Some(days) => extractDays(days) match {
           case Success(s) => Globals.holidays = Some(s)
           case Failure(d) => {
-            
+            logger.error("Failed in loading holidays",d)
           }
         }
       }
-      
+      bDays match {
+        case None => Globals.bankdays  = Some(Set.empty)
+        case Some(days) => extractDays(days) match {
+          case Success(s) => Globals.bankdays = Some(s)
+          case Failure(d) => {
+            logger.error("Failed in loading irregular bankdays",d)
+          }
+        }
+      }
     }
   }
   
-  def extractDays(query : DateQuery) = {
+  def extractDays(query : DateQuery) : Try[Set[java.sql.Date]] = {
     Try{
       val connection = connections.find(_.name == query.connection).get
       val conn = DriverManager.getConnection(connection.url, connection.user, connection.password)

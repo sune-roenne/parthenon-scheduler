@@ -49,7 +49,8 @@ object Config {
     execConf.getString("batch-date-element-name"),
     (execConf ? "execution-day-condition"),
     execConf.getString("date-format"),
-    execConf.getString("output-file-encoding")
+    execConf.getString("output-file-encoding"),
+    execConf.getString("batch-date-expression")
   ))
   
   def dal = (conf >! "persistence")(dalConf => new {
