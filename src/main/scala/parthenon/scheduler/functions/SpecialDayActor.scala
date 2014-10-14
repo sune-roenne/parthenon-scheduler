@@ -20,6 +20,7 @@ class SpecialDayActor extends Actor {
   
   override def receive = {
     case FollowUpOnSpecialDays => {
+      logger.debug("Received request to follow up on special days")
       hDays match {
         case None => Globals.holidays = Some(Set.empty)
         case Some(days) => extractDays(days) match {

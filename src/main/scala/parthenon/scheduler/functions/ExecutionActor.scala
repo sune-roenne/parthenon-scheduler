@@ -25,8 +25,10 @@ class ExecutionActor(execution: Execution) extends Actor {
   import ExecutionActor._
 
   private val logger = LoggerFactory.getLogger(this.getClass)
-  private val shortDelay = 2 minutes
+  private val shortDelay = 10 seconds
   private val longDelay = 1 hours
+  
+  self ! FollowUpOnExecution
 
   override def receive = {
     case FollowUpOnExecution => {
@@ -37,6 +39,8 @@ class ExecutionActor(execution: Execution) extends Actor {
 
   private def executeOrReschedule = {
     val allExecutions = ExecutionDAO.executionsFor(execution.batchGroupName).map(p => new Date(p._2.getTime))
+    logger.debug("All executions for: " + execution.batchGroupName)
+    allExecutions.foreach(ex => logger.debug("  " + ex))
     val today = new Date(System.currentTimeMillis())
     // Already executed today
     if (allExecutions.exists(date => DateUtils.truncatedEquals(date, today, Calendar.DATE))) {
@@ -49,7 +53,10 @@ class ExecutionActor(execution: Execution) extends Actor {
           (Globals.holidays, Globals.bankdays) match {
             case (Some(hDays), Some(bDays)) => {
               val context = ScalaHandler.createContextForExecution(hDays, bDays, today)
-              Try(context(cond).asInstanceOf[Boolean]) match {
+              val evalRes = for(
+                  expres <- context(cond);
+                  casted <- Try(expres.asInstanceOf[Boolean])) yield casted
+              evalRes match {
                 case Success(true) => true
                 case Success(false) => {rescheduleForTomorrow; false}
                 case Failure(err) => {
@@ -98,13 +105,14 @@ class ExecutionActor(execution: Execution) extends Actor {
 
   private def reschedule(delayInMillis: Long) {
     implicit val executor = context.system.dispatcher
+    logger.info("Rescheduling check for execution for: " + (delayInMillis.toDouble)/(1000*60*60).toDouble + " hours")
     context.system.scheduler.scheduleOnce(delayInMillis millis, self, FollowUpOnExecution)
   }
   
   private def execute {
     val context = ScalaHandler.createContextForExecution(Globals.holidays.getOrElse(Set.empty) , Globals.holidays.getOrElse(Set.empty), new java.sql.Date(System.currentTimeMillis))
     val res = for(
-        execRes <- Try(context(execution.batchDateExpression).asInstanceOf[Date]);
+        execRes <- context(execution.batchDateExpression);
         formattedDate <- Try{val form = new SimpleDateFormat(execution.dateFormat); form.format(execRes)}) yield formattedDate
     res match {
       case Failure(err) => {
@@ -125,6 +133,7 @@ class ExecutionActor(execution: Execution) extends Actor {
         IOUtils.write(bytes, os)
         os.close
         logger.info("Wrote: " + elem + " to file: "+ outputFile.getAbsolutePath)
+        ExecutionDAO.insertExecution(execution.batchGroupName , System.currentTimeMillis)
         rescheduleForTomorrow
       }
     }    

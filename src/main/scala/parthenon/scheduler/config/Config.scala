@@ -18,6 +18,7 @@ object Config {
     def >![A](confName : String)(func : TypesafeConfig => A ) = func(conf.getConfig(confName))
     def >>[A](confName : String)(func : TypesafeConfig => A ) = if (!conf.hasPath(confName)) List.empty else conf.getConfigList(confName).map(func).toList
     def ?(confName : String) = if(!config.hasPath(confName)) None else Some(config.getString(confName))
+    
   }
   
   def connections = (conf >>("connections"))(connConf => new {
@@ -28,16 +29,16 @@ object Config {
         val password = connConf.getString("password")
   }) 
   
+  def specialDayUpdate = (conf ? "special-days-update-frequency").map(_.toInt)
+  
   def holidays = (conf > "holidays")(holConf => DateQuery(
     holConf.getString("connection"),
-    holConf.getString("query"),
-    holConf.getInt("update-frequency")
+    holConf.getString("query")
   ))
   
   def irregularBankDays = (conf > "irregular-bank-days")(bdConf => DateQuery(
     bdConf.getString("connection"),
-    bdConf.getString("query"),
-    bdConf.getInt("update-frequency")
+    bdConf.getString("query")
   ))
   
   def executions = (conf >> "executions")(execConf => Execution(
@@ -45,7 +46,7 @@ object Config {
     new Time(timeFormat.parse(execConf.getString("time-of-day")).getTime),
     execConf.getString("output-file-name"),
     execConf.getStringList("xml-prefix").toList,
-    execConf.getString("group-name-element"),
+    execConf.getString("group-element-name"),
     execConf.getString("batch-date-element-name"),
     (execConf ? "execution-day-condition"),
     execConf.getString("date-format"),
